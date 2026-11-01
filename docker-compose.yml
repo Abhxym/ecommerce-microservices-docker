@@ -22,7 +22,35 @@ services:
     networks:
       - marketplace-net
 
-  # user-service, product-service and inventory-service are added here
+  product-service:
+    build: ./product-service
+    image: marketplace/product-service:1.0
+    container_name: product-service
+    restart: unless-stopped
+    environment:
+      PORT: 8082
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-marketplace}
+      DB_USER: ${DB_USER:-marketplace}
+      DB_PASSWORD: ${DB_PASSWORD}
+      INVENTORY_URL: http://inventory-service:8083   # service name, not localhost
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      # inventory-service (condition: service_healthy) is added when that service is merged
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8082/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks:
+      - marketplace-net
+
+  # user-service and inventory-service are added here
   # through their own pull requests (see docs/api-contract.md).
 
 volumes:
