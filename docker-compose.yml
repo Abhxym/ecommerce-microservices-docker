@@ -9,7 +9,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: marketplace
     ports:
-      - "3306:3306"
+      - "${MYSQL_HOST_PORT:-3307}:3306"   # host 3307 avoids clashing with a local MySQL; containers use mysql:3306
     volumes:
       - mysql-data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
