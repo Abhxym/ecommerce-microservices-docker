@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/Abhxym/ecommerce-microservices-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/Abhxym/ecommerce-microservices-docker/actions/workflows/ci.yml)
 
-Case Study 9 (Cloud Native DevOps, MDM). A small online marketplace split into three microservices,
-each written in a different language, with a shared MySQL database and a React storefront.
+Case Study 9 (Cloud Native DevOps, MDM). A small online marketplace split into four microservices
+in three languages, with a shared MySQL database and a React storefront.
 Everything runs in Docker containers and is started with one `docker compose up`.
 
 ![ShopEase storefront](docs/images/shop-desktop.png)
@@ -33,6 +33,7 @@ Everything runs in Docker containers and is started with one `docker compose up`
 | `user-service` | Java 21, Spring Boot 3, Spring Data JPA | 8081 | `GET /actuator/health` | 383 MB |
 | `product-service` | Node.js 20, Express, mysql2 | 8082 | `GET /health` | 205 MB |
 | `inventory-service` | Python 3.12, Flask, gunicorn, PyMySQL | 8083 | `GET /health` | 188 MB |
+| `order-service` | Node.js 20, Express, mysql2 | 8085 | `GET /health` | 205 MB |
 | `web-ui` (ShopEase) | React 18, Vite, nginx | 8080 | `GET /healthz` | 74 MB |
 | `marketplace-mysql` | MySQL 8.4 | 3306 (host 3307) | `mysqladmin ping` | official image |
 
@@ -40,39 +41,53 @@ What each service owns:
 
 - **user-service**: customers. List, get by id, register with validation and duplicate email check. Table `users`.
 - **product-service**: product catalogue. For a single product it also calls inventory-service and adds the stock. Table `products`.
-- **inventory-service**: stock per product and warehouse. Read and update quantity. Table `inventory`.
-- **web-ui**: the ShopEase storefront (shop, cart, orders) and a Seller panel (stock, users). It only talks to the services through its own nginx.
+- **inventory-service**: stock per product and warehouse. Read, update, reserve and release quantity. Table `inventory`.
+- **order-service**: orders. Checks the user, takes prices from product-service, reserves stock in inventory-service and saves the order. Cancel gives the stock back. Tables `orders`, `order_items`.
+- **web-ui**: the ShopEase storefront (shop, cart, My orders) and a Seller panel (stock, users). It only talks to the services through its own nginx.
 
 Each service reads and writes only its own table. Database settings always come from environment variables, never from code.
 
 ## 2. Architecture
 
 ```
-                         Browser
-                            |
-                            | http://localhost:8080
-                            v
-                 +----------------------+
-                 |  web-ui (nginx)      |  serves the React app
-                 |  /api/users     -----+------------------------------+
-                 |  /api/products  -----+--------------+               |
-                 |  /api/inventory -----+---+          |               |
-                 +----------------------+   |          |               |
-                                            v          v               v
-                      +-------------------+  +-----------------+  +----------------+
-                      | inventory-service |<-| product-service |  |  user-service  |
-                      | Flask :8083       |  | Express :8082   |  | Spring :8081   |
-                      +---------+---------+  +--------+--------+  +-------+--------+
-                                |  inventory          |  products         |  users
-                                +---------------------+-------------------+
-                                                      v
-                                          +-----------------------+
-                                          |  MySQL 8.4  :3306     |
-                                          |  volume: mysql-data   |
-                                          +-----------------------+
+                                     Browser
+                                        |  http://localhost:8080
+                                        v
+                      +-----------------------------------+
+                      |  web-ui: nginx + React (ShopEase) |
+                      |  /api/users      /api/products    |
+                      |  /api/inventory  /api/orders      |
+                      +-----------------+-----------------+
+                                        |
+       +------------------+-------------+--------------+--------------------+
+       v                  v                            v                    v
++--------------+  +-----------------+  stock  +-------------------+  +----------------+
+| user-service |  | product-service |-------->| inventory-service |  | order-service  |
+| Spring :8081 |  | Express :8082   |         | Flask :8083       |  | Express :8085  |
++------+-------+  +--------+--------+         +---------+---------+  +-------+--------+
+       ^                   ^                            ^                    |
+       |                   |  price                     |  reserve/release   |
+       +-------------------+----------------------------+--------------------+
+                                order-service calls the other three
+
+       users              products                    inventory            orders, order_items
+       +-------------------+----------------------------+--------------------+
+                                        v
+                            +-----------------------+
+                            |  MySQL 8.4  :3306     |
+                            |  volume: mysql-data   |
+                            +-----------------------+
 
         All containers are on the bridge network "marketplace-net" and find each other by service name.
 ```
+
+| Caller | Calls | Why |
+|---|---|---|
+| web-ui (nginx) | all four services | the browser only talks to `localhost:8080` |
+| product-service | inventory-service `GET /api/inventory/{id}` | add the stock to a product |
+| order-service | user-service `GET /api/users/{id}` | does the customer exist, delivery city |
+| order-service | product-service `GET /api/products/{id}` | real name and price |
+| order-service | inventory-service `POST .../reserve`, `.../release` | take or give back stock |
 
 A request for one product (`GET /api/products/1`) goes browser, nginx, product-service. product-service reads
 the product from MySQL, then calls `http://inventory-service:8083/api/inventory/1` and returns both together:
@@ -84,6 +99,15 @@ the product from MySQL, then calls `http://inventory-service:8083/api/inventory/
 
 If inventory-service cannot be reached, product-service retries 3 times and then returns the product with
 `"stock": null` instead of failing. The storefront then shows "Stock unavailable".
+
+Placing an order (`POST /api/orders`) is a small **Saga** across three services. There is no shared
+transaction, so each step that changed another service has an undo step:
+
+```
+check user (user-service) -> read prices (product-service) -> reserve stock item by item (inventory-service)
+   -> save order and items in one MySQL transaction -> 201 CONFIRMED
+an item cannot be reserved (409) or saving fails  ->  release everything already reserved
+```
 
 ## 3. Screenshots
 
@@ -104,6 +128,10 @@ ecommerce-microservices-docker/
 |   |-- src/                   app.js (routes), db.js, inventoryClient.js (call + retry), config.js
 |   |-- test/                  node:test unit tests
 |   `-- Dockerfile             test stage, production deps, node:20-alpine runtime
+|-- order-service/             Node.js service
+|   |-- src/                   orders.js (Saga), clients.js (calls to the other services), db.js
+|   |-- test/                  node:test tests with fake services
+|   `-- Dockerfile             same pattern as product-service
 |-- inventory-service/         Flask service
 |   |-- app.py, db.py          routes and MySQL queries
 |   |-- gunicorn.conf.py       production server, binds to 0.0.0.0:8083
@@ -115,6 +143,7 @@ ecommerce-microservices-docker/
 |   `-- Dockerfile             Vite build, nginx-unprivileged runtime
 |-- db/
 |   |-- init.sql               tables, sample data, app user (runs once on an empty volume)
+|   |-- migrations/            SQL for databases that already exist (001-orders.sql)
 |   `-- upgrade/               counts.sh, backup.sh, test-on-copy.sh, rollback.sh (Q4)
 |-- docs/
 |   |-- api-contract.md        all endpoints and JSON
@@ -130,7 +159,7 @@ ecommerce-microservices-docker/
 ### Prerequisites
 
 - Docker Desktop (Docker Engine 24 or newer, Compose v2)
-- Free ports: 8080, 8081, 8082, 8083, 3307
+- Free ports: 8080, 8081, 8082, 8083, 8085, 3307
 - About 2 GB of disk for the images
 
 Java, Node.js and Python are **not** needed on your machine. Every service is built inside Docker.
@@ -142,16 +171,18 @@ git clone https://github.com/Abhxym/ecommerce-microservices-docker.git
 cd ecommerce-microservices-docker
 cp .env.example .env              # change the passwords if you want
 docker compose up -d --build      # first build takes a few minutes (Maven downloads)
-docker compose ps                 # wait until all five show (healthy)
+docker compose ps                 # wait until all six show (healthy)
 ```
 
 | What | URL |
 |---|---|
 | ShopEase storefront | http://localhost:8080 |
+| My orders | http://localhost:8080/#orders |
 | Seller panel | http://localhost:8080/#seller |
 | user-service API and its own console | http://localhost:8081 |
 | product-service API | http://localhost:8082/api/products |
 | inventory-service API | http://localhost:8083/api/inventory/1 |
+| order-service API | http://localhost:8085/api/orders?userId=1 |
 | MySQL (Workbench, DBeaver) | `127.0.0.1:3307`, user `marketplace`, database `marketplace` |
 
 ### Environment variables (`.env`)
@@ -183,7 +214,13 @@ Do **not** run `docker compose down -v` unless you want to delete all data: `-v`
 - Each card shows the stock from inventory-service: "In stock", "Only 18 left", "Out of stock".
 - ADD puts an item in the cart. The stepper never goes above the available stock.
 - The cart shows the bill (handling charge, free delivery above Rs. 499) and the delivery address.
-- **Place order** checks the stock again and lowers it in inventory-service.
+- **Place order** sends the cart to order-service, which checks prices and reserves the stock. If an item ran out
+  in the meantime, the cart shows "Only 0 of ... left" and nothing is taken.
+
+**My orders** (http://localhost:8080/#orders)
+
+- All orders of the selected customer from order-service, with items, charges and status.
+- **Cancel order** sets the status to Cancelled and gives the stock back to inventory-service.
 
 **Seller panel** (http://localhost:8080/#seller)
 
@@ -207,6 +244,11 @@ Full details with every status code: [docs/api-contract.md](docs/api-contract.md
 | | `GET /api/products/{id}` | product with `stock` from inventory-service, `404` if missing |
 | inventory-service | `GET /api/inventory/{productId}` | stock, `404` if unknown product |
 | | `PUT /api/inventory/{productId}` | update quantity, `400` if negative or not a whole number |
+| | `POST /api/inventory/{productId}/reserve`, `/release` | take or give back stock (used by order-service), `409` if not enough |
+| order-service | `POST /api/orders` | `201` order, `400` invalid, `409` not enough stock, `503` a service is down |
+| | `GET /api/orders?userId={id}` | orders of a user, newest first |
+| | `GET /api/orders/{id}` | one order, `404` if missing |
+| | `POST /api/orders/{id}/cancel` | cancelled order, stock given back, `409` if already cancelled |
 
 ```bash
 curl localhost:8081/api/users
@@ -214,11 +256,14 @@ curl -X POST -H "Content-Type: application/json" \
   -d '{"name":"Neha Kulkarni","email":"neha.k@example.com","city":"Nashik"}' localhost:8081/api/users
 curl localhost:8082/api/products/1
 curl -X PUT -H "Content-Type: application/json" -d '{"quantity": 50}' localhost:8083/api/inventory/1
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"userId":1,"items":[{"productId":1,"quantity":2},{"productId":2,"quantity":1}]}' localhost:8085/api/orders
+curl "localhost:8085/api/orders?userId=1"
 ```
 
 ## 8. Q1: Dockerfiles
 
-All four Dockerfiles follow the same rules:
+All five Dockerfiles follow the same rules:
 
 - **Multi-stage**: build tools stay in the build stage, the final image has only what is needed to run.
 - **Tests run during the build**: if a test fails, the image is not built.
@@ -230,7 +275,8 @@ All four Dockerfiles follow the same rules:
 |---|---|---|---|---|
 | user-service | `maven:3.9.9-eclipse-temurin-21-alpine`: `mvn package` (runs 7 tests) | `eclipse-temurin:21-jre-alpine` | `appuser` | `wget /actuator/health` |
 | product-service | `node:20-alpine`: `npm ci`, `npm test` (9 tests), then `npm ci --omit=dev` | `node:20-alpine` | `node` | `wget /health` |
-| inventory-service | `python:3.12-slim`: `pip install`, `pytest` (11 tests), then runtime packages only | `python:3.12-slim` | `flask` (uid 1001) | Python `urllib` (slim has no curl) |
+| order-service | `node:20-alpine`: `npm ci`, `npm test` (11 tests), then `npm ci --omit=dev` | `node:20-alpine` | `node` | `wget /health` |
+| inventory-service | `python:3.12-slim`: `pip install`, `pytest` (19 tests), then runtime packages only | `python:3.12-slim` | `flask` (uid 1001) | Python `urllib` (slim has no curl) |
 | web-ui | `node:20-alpine`: `npm ci`, `vite build` | `nginxinc/nginx-unprivileged:1.27-alpine` | `nginx` | `wget /healthz` |
 
 Example, inventory-service (`inventory-service/Dockerfile`):
@@ -257,14 +303,14 @@ CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
 
 ## 9. Q2: Docker Compose and service dependencies
 
-`docker-compose.yml` defines five containers, one network and one volume.
+`docker-compose.yml` defines six containers, one network and one volume.
 
 **Startup order.** Every `depends_on` uses `condition: service_healthy`, so a container starts only when the
 one it needs passes its health check, not just when it has started:
 
 ```
-mysql (healthy) --> user-service (healthy) -------------------------------+
-                --> inventory-service (healthy) --> product-service (healthy) --> web-ui
+mysql (healthy) --> user-service (healthy) -----------------------------------+
+                --> inventory-service (healthy) --> product-service (healthy) -+--> order-service (healthy) --> web-ui
 ```
 
 Real output of `docker compose up -d`:
@@ -336,7 +382,8 @@ Tests also run inside every `docker build`. To run them on their own:
 ```bash
 cd user-service && mvn test                                   # 7 tests, JUnit 5 + MockMvc, H2
 cd product-service && npm install && npm test                 # 9 tests, node:test
-cd inventory-service && pip install -r requirements-dev.txt && pytest -q   # 11 tests, pytest
+cd order-service && npm install && npm test                   # 11 tests, node:test
+cd inventory-service && pip install -r requirements-dev.txt && pytest -q   # 19 tests, pytest
 ```
 
 ### CI pipeline (GitHub Actions)
@@ -346,6 +393,7 @@ cd inventory-service && pip install -r requirements-dev.txt && pytest -q   # 11 
 ```
 user-service      mvn test          --+
 product-service   npm test          --+
+order-service     npm test          --+
 inventory-service pytest            --+--> compose: docker compose up --build --wait
 web-ui            npm run build     --+             curl every service and the storefront
                                                     check the database row counts
@@ -356,28 +404,31 @@ web-ui            npm run build     --+             curl every service and the s
 - `docker compose up --wait` fails the job if any container does not become healthy.
 - The end-to-end step checks that product-service really gets the stock from inventory-service,
   so a Q3-style connection problem fails the pipeline.
+- It also places an order, checks the stock went down, checks that an order that cannot be filled
+  releases its stock (Saga), cancels the order and checks the stock is back.
 - A pull request should be merged only when the CI check is green.
 - Pull requests from a fork (for example Jagdish's) need one click on **Approve and run** the first time.
 
 End-to-end check by hand with everything running:
 
 ```bash
-docker compose ps                         # five containers (healthy)
+docker compose ps                         # six containers (healthy)
 curl localhost:8082/api/products/1        # product with stock
 db/upgrade/counts.sh                      # version and row counts
 ```
 
 ## 13. Demo script
 
-A 5 minute walk-through for the presentation:
+A 6 minute walk-through for the presentation:
 
-1. `docker compose up -d --build` and `docker compose ps`: five healthy containers, startup order in the output.
+1. `docker compose up -d --build` and `docker compose ps`: six healthy containers, startup order in the output.
 2. Open http://localhost:8080: products with live stock from inventory-service.
 3. Add two items, open the cart, **Place order**. Open the Seller panel: the stock went down.
-4. Seller panel: add a user, then add the same email again: `409 Email already exists`.
-5. `docker compose stop inventory-service`, reload: red status dot, "Stock unavailable", shop still works (Q3).
-6. `docker compose up -d`: stock is back without restarting anything else.
-7. Show `docker compose ps` (MySQL 8.4) and `db/upgrade/counts.sh` (Q4, same data).
+4. **My orders**: the order with its items and charges. **Cancel order**: the stock is back in the Seller panel.
+5. Seller panel: add a user, then add the same email again: `409 Email already exists`.
+6. `docker compose stop inventory-service`, reload: red status dot, "Stock unavailable", shop still works (Q3).
+7. `docker compose up -d`: stock is back without restarting anything else.
+8. Show `docker compose ps` (MySQL 8.4) and `db/upgrade/counts.sh` (Q4, same data).
 
 ## 14. Troubleshooting
 
