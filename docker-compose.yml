@@ -40,7 +40,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      # inventory-service (condition: service_healthy) is added when that service is merged
+      inventory-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8082/health"]
       interval: 10s
@@ -76,7 +77,32 @@ services:
     networks:
       - marketplace-net
 
-  # inventory-service is added here through its own pull request (see docs/api-contract.md).
+  inventory-service:
+    build: ./inventory-service
+    image: marketplace/inventory-service:1.0
+    container_name: inventory-service
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0        # listen on all interfaces so other containers can connect
+      PORT: 8083
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-marketplace}
+      DB_USER: ${DB_USER:-marketplace}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8083/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - marketplace-net
 
 volumes:
   mysql-data:
