@@ -1,6 +1,6 @@
 # web-ui
 
-React 18 (Vite) storefront for the marketplace. Port 8080. Served by nginx, which also forwards
+ShopEase, the React 18 (Vite) storefront for the marketplace. Port 8080. Served by nginx, which also forwards
 `/api/...` to the three services by their Compose names, so the browser only talks to one origin.
 
 | Page | What it uses |

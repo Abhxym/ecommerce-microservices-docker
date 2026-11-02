@@ -1,4 +1,6 @@
 :root {
+  --brand: #ff8a3d;
+  --brand-dark: #f25c05;
   --green: #12805c;
   --green-dark: #0c6447;
   --green-soft: #e7f5ef;
@@ -32,11 +34,11 @@ input, select { font: inherit; }
 }
 .brand { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
 .brand-mark {
-  width: 38px; height: 38px; border-radius: 10px; background: var(--yellow);
-  display: grid; place-items: center; font-weight: 800; font-size: 22px; color: var(--green-dark);
+  width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  display: grid; place-items: center; box-shadow: 0 4px 10px rgba(242, 92, 5, 0.3);
 }
 .brand-name { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-.brand-name b { color: var(--green); }
+.brand-name b { color: var(--brand-dark); font-weight: 800; }
 
 .deliver { display: flex; flex-direction: column; min-width: 190px; padding-left: 20px; border-left: 1px solid var(--line); }
 .deliver-title { font-weight: 800; font-size: 15px; }
@@ -255,7 +257,8 @@ th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align
   .deliver-title { white-space: nowrap; font-size: 14px; }
   .deliver select { flex: 1; min-width: 0; }
   .top-actions { order: 1; margin-left: auto; }
-  .brand-mark { width: 32px; height: 32px; font-size: 19px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .brand-mark svg { width: 19px; height: 19px; }
   .promos { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -16px 20px; padding: 0 16px; }
   .promos::-webkit-scrollbar { display: none; }
   .promo { min-width: 86%; scroll-snap-align: start; min-height: 140px; padding: 18px; }

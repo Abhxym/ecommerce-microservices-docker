@@ -92,8 +92,14 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand" onClick={() => setView('shop')}>
-          <span className="brand-mark">m</span>
-          <span className="brand-name">market<b>place</b></span>
+          <span className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22">
+              <path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z" fill="#fff" />
+              <path d="M9 10V7a3 3 0 0 1 6 0v3" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M9.5 14.5q2.5 2.5 5 0" fill="none" stroke="#f25c05" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="brand-name">Shop<b>Ease</b></span>
         </div>
 
         <label className="deliver">
