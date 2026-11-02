@@ -11,4 +11,6 @@ module.exports = {
   // Inside Docker Compose this is the service name, never localhost.
   inventoryUrl: process.env.INVENTORY_URL || 'http://inventory-service:8083',
   inventoryTimeoutMs: Number(process.env.INVENTORY_TIMEOUT_MS || 2000),
+  inventoryRetries: Number(process.env.INVENTORY_RETRIES || 3),
+  inventoryRetryDelayMs: Number(process.env.INVENTORY_RETRY_DELAY_MS || 300),
 };

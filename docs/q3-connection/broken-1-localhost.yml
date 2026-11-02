@@ -1,0 +1,5 @@
+# Cause 1: product-service calls localhost. Inside a container localhost is the container itself.
+services:
+  product-service:
+    environment:
+      INVENTORY_URL: http://localhost:8083

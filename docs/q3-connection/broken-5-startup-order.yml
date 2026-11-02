@@ -1,0 +1,8 @@
+# Cause 5: no startup order and no retry. product-service starts without waiting for inventory-service.
+services:
+  product-service:
+    depends_on: !override
+      mysql:
+        condition: service_healthy
+    environment:
+      INVENTORY_RETRIES: 1

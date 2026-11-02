@@ -1,0 +1,16 @@
+# Cause 3: inventory-service is on a different network, so the name inventory-service cannot be resolved.
+services:
+  inventory-service:
+    networks: !override
+      - isolated-net
+    environment:
+      DB_HOST: 127.0.0.1   # it cannot reach mysql either on this network
+    healthcheck:
+      disable: true
+  product-service:
+    depends_on: !override
+      mysql:
+        condition: service_healthy
+
+networks:
+  isolated-net:

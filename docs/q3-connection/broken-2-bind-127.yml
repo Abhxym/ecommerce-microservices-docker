@@ -1,0 +1,5 @@
+# Cause 2: Flask/gunicorn listens on 127.0.0.1, so it only accepts calls from inside its own container.
+services:
+  inventory-service:
+    environment:
+      HOST: 127.0.0.1
