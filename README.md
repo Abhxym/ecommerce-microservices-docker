@@ -55,7 +55,8 @@ All three Dockerfiles are multi-stage, run the tests during the build, run as a 
 Startup order in Compose (each step waits for `service_healthy`):
 
 ```
-mysql  ->  user-service ---------------------------\n       ->  inventory-service  ->  product-service  ->  web-ui
+mysql  ->  user-service -------------------------------+
+       ->  inventory-service  ->  product-service  ->  web-ui
 ```
 
 All services are on the `marketplace-net` network and MySQL data is in the `mysql-data` volume.
