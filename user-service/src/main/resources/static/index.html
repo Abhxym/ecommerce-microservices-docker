@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Service - Marketplace Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-title p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      background: var(--border-color);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .status-badge.up {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .status-badge.down {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 32px auto 0;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Table styles */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #fbfcfe;
+    }
+
+    .badge-id {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }
+
+    /* Forms & Inputs */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      transition: all 0.15s ease;
+      background: #ffffff;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.775rem;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .alert-success {
+      background: var(--success-light);
+      color: #14532d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .alert-error {
+      background: var(--danger-light);
+      color: #7f1d1d;
+      border: 1px solid #fecaca;
+    }
+
+    /* Lookup panel */
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .user-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .user-card p {
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    .user-card strong {
+      color: #475569;
+    }
+
+    /* Tabs & Code */
+    .guide-box {
+      grid-column: 1 / -1;
+      margin-top: 10px;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      overflow-x: auto;
+      font-family: Consolas, monospace;
+    }
+
+    code {
+      font-family: Consolas, monospace;
+    }
+
+    .contract-tag {
+      font-size: 0.725rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .get-tag { background: #e0f2fe; color: #0369a1; }
+    .post-tag { background: #dcfce7; color: #15803d; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">U</div>
+      <div class="brand-title">
+        <h1>user-service</h1>
+        <p>Spring Boot 3 | Port 8081 | MySQL Table: <code>users</code></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div id="statusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="checkHealth()">Refresh Health</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Users List & Management -->
+    <section>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Marketplace Users</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Fetched live via <code>GET /api/users</code></p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadUsers()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+            Reload
+          </button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 70px;">ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>City</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                  Loading users from database...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Create User & Search Form -->
+    <aside style="display: flex; flex-direction: column; gap: 24px;">
+      <!-- Create User Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Create New User</h2>
+          <span class="contract-tag post-tag">POST /api/users</span>
+        </div>
+        <div class="card-body">
+          <div id="createAlert" class="alert"></div>
+
+          <form id="createUserForm" onsubmit="handleCreateUser(event)">
+            <div class="form-group">
+              <label for="userName">Full Name *</label>
+              <input type="text" id="userName" placeholder="e.g. Rahul Verma" required>
+            </div>
+
+            <div class="form-group">
+              <label for="userEmail">Email Address *</label>
+              <input type="email" id="userEmail" placeholder="e.g. rahul@example.com" required>
+            </div>
+
+            <div class="form-group">
+              <label for="userCity">City</label>
+              <input type="text" id="userCity" placeholder="e.g. Hyderabad">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              Create User (201 Created)
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Search by ID Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Lookup by ID</h2>
+          <span class="contract-tag get-tag">GET /api/users/{id}</span>
+        </div>
+        <div class="card-body">
+          <div class="search-box">
+            <input type="number" id="lookupId" placeholder="User ID (e.g. 1)" min="1">
+            <button class="btn btn-secondary" onclick="lookupUser()">Search</button>
+          </div>
+          <div id="lookupResult"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bottom Full-Width Section: Postman & API Contract Helper -->
+    <div class="card guide-box">
+      <div class="card-header">
+        <h2>Postman & cURL Testing Guide</h2>
+      </div>
+      <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+        <div>
+          <h3 style="font-size: 0.9rem; margin-bottom: 8px;">1. Health Endpoint</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;"><code>GET http://localhost:8081/actuator/health</code></p>
+          <pre>curl http://localhost:8081/actuator/health</pre>
+        </div>
+
+        <div>
+          <h3 style="font-size: 0.9rem; margin-bottom: 8px;">2. List All Users</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;"><code>GET http://localhost:8081/api/users</code></p>
+          <pre>curl http://localhost:8081/api/users</pre>
+        </div>
+
+        <div>
+          <h3 style="font-size: 0.9rem; margin-bottom: 8px;">3. Create User (POST)</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;"><code>POST http://localhost:8081/api/users</code></p>
+          <pre>curl -X POST http://localhost:8081/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Sneha Reddy", "email": "sneha@example.com", "city": "Chennai"}'</pre>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = '/api/users';
+
+    // 1. Check Health
+    async function checkHealth() {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      try {
+        const res = await fetch('/actuator/health');
+        const data = await res.json();
+        if (res.ok && data.status === 'UP') {
+          badge.className = 'status-badge up';
+          text.textContent = 'Service & DB: UP';
+        } else {
+          badge.className = 'status-badge down';
+          text.textContent = 'Status: ' + (data.status || 'DOWN');
+        }
+      } catch (e) {
+        badge.className = 'status-badge down';
+        text.textContent = 'Service Offline';
+      }
+    }
+
+    // 2. Load Users
+    async function loadUsers() {
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Refreshing users...</td></tr>';
+      try {
+        const res = await fetch(API_BASE);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const users = await res.json();
+
+        if (users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No users found in database.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td><span class="badge-id">#${u.id}</span></td>
+            <td><strong>${escapeHtml(u.name)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td>${escapeHtml(u.city || '-')}</td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-sm" onclick="quickView(${u.id})">Inspect</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 24px;">Failed to load users: ${err.message}</td></tr>`;
+      }
+    }
+
+    // 3. Create User
+    async function handleCreateUser(e) {
+      e.preventDefault();
+      const alert = document.getElementById('createAlert');
+      alert.style.display = 'none';
+
+      const name = document.getElementById('userName').value.trim();
+      const email = document.getElementById('userEmail').value.trim();
+      const city = document.getElementById('userCity').value.trim();
+
+      try {
+        const res = await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, city })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 201) {
+          showAlert(alert, 'alert-success', `User #${data.id} (${data.name}) created successfully!`);
+          document.getElementById('createUserForm').reset();
+          loadUsers();
+        } else if (res.status === 409) {
+          showAlert(alert, 'alert-error', `Conflict: ${data.message || data.error}`);
+        } else if (res.status === 400) {
+          const detail = data.details ? Object.values(data.details).join(', ') : (data.message || data.error);
+          showAlert(alert, 'alert-error', `Validation Error: ${detail}`);
+        } else {
+          showAlert(alert, 'alert-error', `Error (${res.status}): ${data.error || 'Request failed'}`);
+        }
+      } catch (err) {
+        showAlert(alert, 'alert-error', `Network error: ${err.message}`);
+      }
+    }
+
+    // 4. Lookup User
+    async function lookupUser() {
+      const id = document.getElementById('lookupId').value.trim();
+      const container = document.getElementById('lookupResult');
+      if (!id) {
+        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Please enter a user ID.</p>';
+        return;
+      }
+
+      container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Searching...</p>';
+      try {
+        const res = await fetch(`${API_BASE}/${id}`);
+        if (res.status === 404) {
+          container.innerHTML = '<div class="alert alert-error" style="display:block;">User ID ' + id + ' not found (HTTP 404).</div>';
+          return;
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const u = await res.json();
+        container.innerHTML = `
+          <div class="user-card">
+            <p><strong>ID:</strong> #${u.id}</p>
+            <p><strong>Name:</strong> ${escapeHtml(u.name)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(u.email)}</p>
+            <p><strong>City:</strong> ${escapeHtml(u.city || '-')}</p>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<p style="color: var(--danger); font-size: 0.85rem;">Error: ${err.message}</p>`;
+      }
+    }
+
+    function quickView(id) {
+      document.getElementById('lookupId').value = id;
+      lookupUser();
+    }
+
+    function showAlert(el, type, msg) {
+      el.className = 'alert ' + type;
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initial load
+    checkHealth();
+    loadUsers();
+  </script>
+</body>
+</html>
+

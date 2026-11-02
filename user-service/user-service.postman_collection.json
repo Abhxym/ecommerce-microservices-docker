@@ -1,0 +1,150 @@
+{
+  "info": {
+    "_postman_id": "a92e105e-85c8-4720-bc7e-90807b1d9bf5",
+    "name": "Marketplace - User Service",
+    "description": "Collection for testing user-service endpoints (Spring Boot 3, Port 8081).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check (Actuator)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/actuator/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["actuator", "health"]
+        },
+        "description": "Verifies service and database connectivity. Expects 200 OK with {\"status\": \"UP\"}."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users"]
+        },
+        "description": "Returns list of all users from MySQL."
+      },
+      "response": []
+    },
+    {
+      "name": "Get User By ID (Found)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/users/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users", "1"]
+        },
+        "description": "Returns single user details. Expects 200 OK."
+      },
+      "response": []
+    },
+    {
+      "name": "Get User By ID (Not Found)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/users/999",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users", "999"]
+        },
+        "description": "Queries non-existent user. Expects 404 Not Found."
+      },
+      "response": []
+    },
+    {
+      "name": "Create User - Success (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Vikram Malhotra\",\n  \"email\": \"vikram.m@example.com\",\n  \"city\": \"Delhi\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users"]
+        },
+        "description": "Creates a new user. Expects 201 Created and Location header."
+      },
+      "response": []
+    },
+    {
+      "name": "Create User - Duplicate Email Conflict (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Priya Sharma Clone\",\n  \"email\": \"priya.sharma@example.com\",\n  \"city\": \"Pune\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users"]
+        },
+        "description": "Attempts to register an existing email. Expects 409 Conflict."
+      },
+      "response": []
+    },
+    {
+      "name": "Create User - Validation Error (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"\",\n  \"email\": \"not-a-valid-email\",\n  \"city\": \"\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "users"]
+        },
+        "description": "Sends invalid name and malformed email. Expects 400 Bad Request."
+      },
+      "response": []
+    }
+  ]
+}
+
