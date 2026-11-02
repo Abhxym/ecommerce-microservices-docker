@@ -9,7 +9,12 @@ import CategoryTiles from './components/CategoryTiles.jsx';
 import Toast from './components/Toast.jsx';
 
 export default function App() {
-  const [view, setView] = useState('shop');
+  // the Seller panel can be opened directly with http://localhost:8080/#seller
+  const [view, setViewState] = useState(window.location.hash === '#seller' ? 'seller' : 'shop');
+  const setView = (v) => {
+    setViewState(v);
+    window.history.replaceState(null, '', v === 'seller' ? '#seller' : window.location.pathname);
+  };
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
   const [userId, setUserId] = useState('');
