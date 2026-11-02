@@ -6,9 +6,9 @@ WORKDIR /app
 COPY pom.xml ./
 RUN mvn dependency:go-offline -B
 
-# Copy source code and build package
+# Copy source code, run the tests and build the package
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -B
 
 # Stage 2: Lightweight runtime image
 FROM eclipse-temurin:21-jre-alpine
