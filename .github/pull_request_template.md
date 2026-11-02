@@ -14,6 +14,7 @@ Closes #
 ## Checklist
 - [ ] Builds locally
 - [ ] Tests pass
+- [ ] CI check is green
 - [ ] No passwords or secrets in code (environment variables only)
 - [ ] Follows docs/api-contract.md (paths, port, JSON)
 - [ ] Only my service folder changed (plus my block in docker-compose.yml)
