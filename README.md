@@ -8,11 +8,13 @@ Case Study 9. A marketplace built from three services and a shared MySQL databas
 | product-service | Node.js 20, Express | 8082 | `/health` |
 | inventory-service | Python 3.12, Flask (gunicorn) | 8083 | `/health` |
 | mysql | MySQL 8.4 | 3306 (host 3307) | `mysqladmin ping` |
+| web-ui | React 18 (Vite), nginx | 8080 | `/healthz` |
 
 ```
 user-service/          Spring Boot service, web console at http://localhost:8081
 product-service/       Node.js service (calls inventory-service for stock)
 inventory-service/     Flask service
+web-ui/                React storefront and seller panel, http://localhost:8080
 db/init.sql            tables and sample data
 db/upgrade/            backup, test, rollback scripts for the MySQL upgrade
 docker-compose.yml     all services, network, volume, healthchecks
@@ -26,8 +28,10 @@ docs/q4-mysql-upgrade.md  Q4: MySQL 8.0 to 8.4 upgrade
 ```bash
 cp .env.example .env        # then set the passwords
 docker compose up -d --build
-docker compose ps           # all four containers should be (healthy)
+docker compose ps           # all five containers should be (healthy)
 ```
+
+Open http://localhost:8080 for the storefront. The APIs can also be called directly:
 
 ```bash
 curl localhost:8081/api/users
@@ -51,8 +55,7 @@ All three Dockerfiles are multi-stage, run the tests during the build, run as a 
 Startup order in Compose (each step waits for `service_healthy`):
 
 ```
-mysql  ->  user-service
-       ->  inventory-service  ->  product-service
+mysql  ->  user-service ---------------------------\n       ->  inventory-service  ->  product-service  ->  web-ui
 ```
 
 All services are on the `marketplace-net` network and MySQL data is in the `mysql-data` volume.
