@@ -1,13 +1,14 @@
 # web-ui
 
 ShopEase, the React 18 (Vite) storefront for the marketplace. Port 8080. Served by nginx, which also forwards
-`/api/...` to the three services by their Compose names, so the browser only talks to one origin.
+`/api/...` to the four services by their Compose names, so the browser only talks to one origin.
 
 | Page | What it uses |
 |---|---|
 | Shop: product grid, categories, search | `GET /api/products`, `GET /api/products/{id}` (product-service adds stock from inventory-service) |
 | Delivery selector (customer) | `GET /api/users` (user-service) |
-| Cart and Place order | `GET /api/inventory/{id}`, then `PUT /api/inventory/{id}` to lower the stock |
+| Cart and Place order | `POST /api/orders` (order-service checks prices and reserves the stock) |
+| My orders (`#orders`) | `GET /api/orders?userId=`, `POST /api/orders/{id}/cancel` |
 | Seller panel: stock table | `PUT /api/inventory/{id}` |
 | Seller panel: users, Add user | `GET /api/users`, `POST /api/users` (shows 400 and 409 errors) |
 | Status bar | `/status/<service>`, mapped by nginx to each service's health endpoint |

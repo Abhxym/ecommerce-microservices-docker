@@ -42,3 +42,32 @@ def update_quantity(product_id, quantity):
             (product_id,),
         )
         return cur.fetchone()
+
+
+def reserve(product_id, quantity):
+    """Take quantity out of stock in one statement, so two orders cannot take the same units.
+    Returns (row, ok). ok is False when there is not enough stock, row is None for an unknown product."""
+    with connect() as conn, conn.cursor() as cur:
+        changed = cur.execute(
+            "UPDATE inventory SET quantity = quantity - %s WHERE product_id = %s AND quantity >= %s",
+            (quantity, product_id, quantity),
+        )
+        cur.execute(
+            "SELECT product_id, quantity, warehouse FROM inventory WHERE product_id = %s",
+            (product_id,),
+        )
+        return cur.fetchone(), changed == 1
+
+
+def release(product_id, quantity):
+    """Put quantity back into stock (order cancelled or failed)."""
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "UPDATE inventory SET quantity = quantity + %s WHERE product_id = %s",
+            (quantity, product_id),
+        )
+        cur.execute(
+            "SELECT product_id, quantity, warehouse FROM inventory WHERE product_id = %s",
+            (product_id,),
+        )
+        return cur.fetchone()

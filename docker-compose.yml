@@ -104,6 +104,41 @@ services:
     networks:
       - marketplace-net
 
+  order-service:
+    build: ./order-service
+    image: marketplace/order-service:1.0
+    container_name: order-service
+    restart: unless-stopped
+    environment:
+      PORT: 8085
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-marketplace}
+      DB_USER: ${DB_USER:-marketplace}
+      DB_PASSWORD: ${DB_PASSWORD}
+      USER_SERVICE_URL: http://user-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8085/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks:
+      - marketplace-net
+
   web-ui:
     build: ./web-ui
     image: marketplace/web-ui:1.0
@@ -117,6 +152,8 @@ services:
       product-service:
         condition: service_healthy
       inventory-service:
+        condition: service_healthy
+      order-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]

@@ -51,6 +51,39 @@ def create_app(store=db):
         log.info("stock for product %s set to %s", product_id, quantity)
         return jsonify(to_json(row))
 
+    def read_quantity():
+        body = request.get_json(silent=True) or {}
+        quantity = body.get("quantity")
+        if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity < 1:
+            return None
+        return quantity
+
+    # used by order-service: take stock for an order, 409 if there is not enough
+    @app.post("/api/inventory/<int:product_id>/reserve")
+    def reserve_stock(product_id):
+        quantity = read_quantity()
+        if quantity is None:
+            return jsonify(error="quantity must be a whole number, 1 or more"), 400
+        row, ok = store.reserve(product_id, quantity)
+        if row is None:
+            return jsonify(error="Product not found"), 404
+        if not ok:
+            return jsonify(error=f"Only {row['quantity']} left", available=row["quantity"]), 409
+        log.info("reserved %s of product %s, %s left", quantity, product_id, row["quantity"])
+        return jsonify(to_json(row))
+
+    # used by order-service: give stock back when an order is cancelled or fails
+    @app.post("/api/inventory/<int:product_id>/release")
+    def release_stock(product_id):
+        quantity = read_quantity()
+        if quantity is None:
+            return jsonify(error="quantity must be a whole number, 1 or more"), 400
+        row = store.release(product_id, quantity)
+        if row is None:
+            return jsonify(error="Product not found"), 404
+        log.info("released %s of product %s, %s now", quantity, product_id, row["quantity"])
+        return jsonify(to_json(row))
+
     @app.errorhandler(404)
     def not_found(e):
         return jsonify(error="Not found"), 404

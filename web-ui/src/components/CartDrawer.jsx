@@ -19,8 +19,8 @@ export default function CartDrawer({ open, items, user, onClose, onAdd, onRemove
     setPlacing(true);
     setError('');
     try {
-      const id = await onPlaceOrder();
-      setOrder({ id, total, count: items.reduce((s, i) => s + i.qty, 0) });
+      const placed = await onPlaceOrder();
+      setOrder({ id: placed.id, total: placed.grandTotal, count: items.reduce((s, i) => s + i.qty, 0) });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -48,7 +48,7 @@ export default function CartDrawer({ open, items, user, onClose, onAdd, onRemove
             <div className="tick">&#10003;</div>
             <h3>Thank you{user ? `, ${user.name.split(' ')[0]}` : ''}!</h3>
             <p>Order <strong>#{order.id}</strong> with {order.count} item(s), total {rupees(order.total)}.</p>
-            <p className="muted">Stock was reduced in inventory-service. Check the Seller panel.</p>
+            <p className="muted">Saved by order-service, stock reserved in inventory-service. See My orders.</p>
             <button className="primary-btn" onClick={close}>Continue shopping</button>
           </div>
         ) : items.length === 0 ? (

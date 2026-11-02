@@ -21,9 +21,12 @@ export const api = {
   product: (id) => request('GET', `/api/products/${id}`),
   stock: (id) => request('GET', `/api/inventory/${id}`),
   setStock: (id, quantity) => request('PUT', `/api/inventory/${id}`, { quantity }),
+  createOrder: (order) => request('POST', '/api/orders', order),
+  orders: (userId) => request('GET', `/api/orders?userId=${userId}`),
+  cancelOrder: (id) => request('POST', `/api/orders/${id}/cancel`),
 };
 
-export const SERVICES = ['user-service', 'product-service', 'inventory-service'];
+export const SERVICES = ['user-service', 'product-service', 'inventory-service', 'order-service'];
 
 export async function serviceStatus(name) {
   try {
