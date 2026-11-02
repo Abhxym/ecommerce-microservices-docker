@@ -50,8 +50,33 @@ services:
     networks:
       - marketplace-net
 
-  # user-service and inventory-service are added here
-  # through their own pull requests (see docs/api-contract.md).
+  user-service:
+    build: ./user-service
+    image: marketplace/user-service:1.0
+    container_name: user-service
+    restart: unless-stopped
+    environment:
+      PORT: 8081
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-marketplace}
+      DB_USER: ${DB_USER:-marketplace}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 25s
+    networks:
+      - marketplace-net
+
+  # inventory-service is added here through its own pull request (see docs/api-contract.md).
 
 volumes:
   mysql-data:
