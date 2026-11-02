@@ -7,13 +7,17 @@ import StatusBar from './components/StatusBar.jsx';
 import Promos from './components/Promos.jsx';
 import CategoryTiles from './components/CategoryTiles.jsx';
 import Toast from './components/Toast.jsx';
+import MyOrders from './components/MyOrders.jsx';
 
 export default function App() {
-  // the Seller panel can be opened directly with http://localhost:8080/#seller
-  const [view, setViewState] = useState(window.location.hash === '#seller' ? 'seller' : 'shop');
+  // pages can be opened directly: http://localhost:8080/#seller and /#orders
+  const [view, setViewState] = useState(() => {
+    const hash = window.location.hash.slice(1);
+    return ['seller', 'orders'].includes(hash) ? hash : 'shop';
+  });
   const setView = (v) => {
     setViewState(v);
-    window.history.replaceState(null, '', v === 'seller' ? '#seller' : window.location.pathname);
+    window.history.replaceState(null, '', v === 'shop' ? window.location.pathname : `#${v}`);
   };
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
@@ -76,21 +80,19 @@ export default function App() {
       return next;
     });
 
-  // Placing an order lowers the stock in inventory-service for each item.
+  // order-service checks the prices, reserves the stock and saves the order.
+  // The browser only sends product ids and quantities.
   async function placeOrder() {
-    for (const { product, qty } of items) {
-      const current = await api.stock(product.id);
-      if (current.quantity < qty) {
-        throw new Error(`Only ${current.quantity} of ${product.name} left, please update your cart`);
-      }
+    try {
+      const order = await api.createOrder({
+        userId: Number(userId),
+        items: items.map(({ product, qty }) => ({ productId: product.id, quantity: qty })),
+      });
+      setCart({});
+      return order;
+    } finally {
+      await load(); // stock on the cards is fresh, also after an out-of-stock error
     }
-    for (const { product, qty } of items) {
-      const current = await api.stock(product.id);
-      await api.setStock(product.id, current.quantity - qty);
-    }
-    setCart({});
-    await load();
-    return String(Date.now()).slice(-6);
   }
 
   return (
@@ -130,6 +132,9 @@ export default function App() {
         </div>
 
         <nav className="top-actions">
+          <button className={`link-btn ${view === 'orders' ? 'active' : ''}`} onClick={() => setView(view === 'orders' ? 'shop' : 'orders')}>
+            My orders
+          </button>
           <button className={`link-btn ${view === 'seller' ? 'active' : ''}`} onClick={() => setView(view === 'seller' ? 'shop' : 'seller')}>
             {view === 'seller' ? 'Back to shop' : 'Seller panel'}
           </button>
@@ -150,6 +155,8 @@ export default function App() {
 
         {view === 'seller' ? (
           <SellerPanel products={products} users={users} onChanged={load} />
+        ) : view === 'orders' ? (
+          <MyOrders user={user} onChanged={load} onShop={() => setView('shop')} />
         ) : (
           <>
             {!search && <Promos onPick={setCategory} />}
@@ -208,7 +215,7 @@ export default function App() {
       <Toast message={toast} onDone={clearToast} />
 
       <footer className="footer">
-        Case Study 9: user-service (Spring Boot), product-service (Node.js), inventory-service (Flask), MySQL 8.4, served by nginx.
+        Case Study 9: user-service (Spring Boot), product-service and order-service (Node.js), inventory-service (Flask), MySQL 8.4, served by nginx.
       </footer>
     </div>
   );

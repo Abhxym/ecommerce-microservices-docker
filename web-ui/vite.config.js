@@ -11,9 +11,11 @@ export default defineConfig({
       '/api/users': 'http://localhost:8081',
       '/api/products': 'http://localhost:8082',
       '/api/inventory': 'http://localhost:8083',
+      '/api/orders': 'http://localhost:8085',
       '/status/user-service': { target: 'http://localhost:8081', rewrite: () => '/actuator/health' },
       '/status/product-service': { target: 'http://localhost:8082', rewrite: () => '/health' },
       '/status/inventory-service': { target: 'http://localhost:8083', rewrite: () => '/health' },
+      '/status/order-service': { target: 'http://localhost:8085', rewrite: () => '/health' },
     },
   },
 });
