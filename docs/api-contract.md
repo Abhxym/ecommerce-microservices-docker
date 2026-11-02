@@ -9,7 +9,7 @@ Inside Docker Compose, services reach each other by **service name**, never `loc
 | user-service | `user-service/` | Java 21, Spring Boot 3 | 8081 | `GET /actuator/health` |
 | product-service | `product-service/` | Node.js 20, Express | 8082 | `GET /health` |
 | inventory-service | `inventory-service/` | Python 3.12, Flask | 8083 | `GET /health` |
-| mysql | - | MySQL 8.0 | 3306 | `mysqladmin ping` |
+| mysql | - | MySQL 8.4 | 3306 (host 3307) | `mysqladmin ping` |
 
 Every health endpoint returns HTTP 200 with `{"status": "UP"}` when the service and its database connection work.
 
