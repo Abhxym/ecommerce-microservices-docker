@@ -1,5 +1,7 @@
 # ShopEase: E-Commerce Marketplace with Microservices and Docker
 
+[![CI](https://github.com/Abhxym/ecommerce-microservices-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/Abhxym/ecommerce-microservices-docker/actions/workflows/ci.yml)
+
 Case Study 9 (Cloud Native DevOps, MDM). A small online marketplace split into three microservices,
 each written in a different language, with a shared MySQL database and a React storefront.
 Everything runs in Docker containers and is started with one `docker compose up`.
@@ -19,7 +21,7 @@ Everything runs in Docker containers and is started with one `docker compose up`
 9. [Q2: Docker Compose and service dependencies](#9-q2-docker-compose-and-service-dependencies)
 10. [Q3: product-service cannot connect to inventory-service](#10-q3-product-service-cannot-connect-to-inventory-service)
 11. [Q4: Upgrade MySQL without losing data](#11-q4-upgrade-mysql-without-losing-data)
-12. [Testing](#12-testing)
+12. [Testing and CI](#12-testing-and-ci)
 13. [Demo script](#13-demo-script)
 14. [Troubleshooting](#14-troubleshooting)
 15. [How we work](#15-how-we-work)
@@ -327,7 +329,7 @@ step: [docs/q4-mysql-upgrade.md](docs/q4-mysql-upgrade.md).
 | 4. Verify | `db/upgrade/counts.sh` | 3 users, 5 products, 5 inventory rows, checksum 233: same as before |
 | 5. Rollback (tested) | `db/upgrade/rollback.sh` | restored 8.0 volume, same counts, then upgraded again |
 
-## 12. Testing
+## 12. Testing and CI
 
 Tests also run inside every `docker build`. To run them on their own:
 
@@ -337,7 +339,27 @@ cd product-service && npm install && npm test                 # 9 tests, node:te
 cd inventory-service && pip install -r requirements-dev.txt && pytest -q   # 11 tests, pytest
 ```
 
-End-to-end check with everything running:
+### CI pipeline (GitHub Actions)
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request to `main` and on every push to `main`:
+
+```
+user-service      mvn test          --+
+product-service   npm test          --+
+inventory-service pytest            --+--> compose: docker compose up --build --wait
+web-ui            npm run build     --+             curl every service and the storefront
+                                                    check the database row counts
+                                                    print all logs if something fails
+```
+
+- The four test jobs run in parallel. The Compose job runs only if all four pass.
+- `docker compose up --wait` fails the job if any container does not become healthy.
+- The end-to-end step checks that product-service really gets the stock from inventory-service,
+  so a Q3-style connection problem fails the pipeline.
+- A pull request should be merged only when the CI check is green.
+- Pull requests from a fork (for example Jagdish's) need one click on **Approve and run** the first time.
+
+End-to-end check by hand with everything running:
 
 ```bash
 docker compose ps                         # five containers (healthy)
