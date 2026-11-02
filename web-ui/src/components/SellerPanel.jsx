@@ -79,9 +79,34 @@ function AddUser({ onCreated }) {
   );
 }
 
+function Stats({ products, users }) {
+  const known = products.filter((p) => p.stock);
+  const units = known.reduce((s, p) => s + p.stock.quantity, 0);
+  const value = known.reduce((s, p) => s + p.stock.quantity * p.price, 0);
+  const out = known.filter((p) => !p.stock.inStock).length;
+  const tiles = [
+    { label: 'Products', value: products.length, tone: 'green' },
+    { label: 'Units in stock', value: units.toLocaleString('en-IN'), tone: 'blue' },
+    { label: 'Stock value', value: rupees(value), tone: 'yellow' },
+    { label: 'Out of stock', value: out, tone: out ? 'red' : 'green' },
+    { label: 'Users', value: users.length, tone: 'blue' },
+  ];
+  return (
+    <div className="stats">
+      {tiles.map((t) => (
+        <div key={t.label} className={`stat stat-${t.tone}`}>
+          <span>{t.label}</span>
+          <strong>{t.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SellerPanel({ products, users, onChanged }) {
   return (
     <div className="seller">
+      <Stats products={products} users={users} />
       <section className="panel">
         <h2>Inventory <small>inventory-service (Flask)</small></h2>
         <div className="table-wrap">

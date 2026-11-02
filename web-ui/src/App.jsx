@@ -4,6 +4,9 @@ import ProductCard from './components/ProductCard.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import SellerPanel from './components/SellerPanel.jsx';
 import StatusBar from './components/StatusBar.jsx';
+import Promos from './components/Promos.jsx';
+import CategoryTiles from './components/CategoryTiles.jsx';
+import Toast from './components/Toast.jsx';
 
 export default function App() {
   const [view, setView] = useState('shop');
@@ -16,6 +19,8 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const clearToast = useCallback(() => setToast(''), []);
 
   // The list endpoint has no stock, so each product is loaded from /api/products/{id},
   // where product-service adds the stock it gets from inventory-service.
@@ -55,7 +60,10 @@ export default function App() {
   const count = items.reduce((s, i) => s + i.qty, 0);
   const total = items.reduce((s, i) => s + i.qty * i.product.price, 0);
 
-  const add = (p) => setCart((c) => ({ ...c, [p.id]: Math.min((c[p.id] || 0) + 1, p.stock.quantity) }));
+  const add = (p) => {
+    setCart((c) => ({ ...c, [p.id]: Math.min((c[p.id] || 0) + 1, p.stock.quantity) }));
+    if (!cart[p.id]) setToast(`${p.name} added to cart`);
+  };
   const remove = (p) =>
     setCart((c) => {
       const next = { ...c, [p.id]: (c[p.id] || 0) - 1 };
@@ -133,33 +141,37 @@ export default function App() {
           <SellerPanel products={products} users={users} onChanged={load} />
         ) : (
           <>
-            <section className="hero">
-              <div>
-                <h1>Everyday essentials, delivered fast</h1>
-                <p>Clothing, home and electronics from local sellers. Free delivery above {rupees(499)}.</p>
-              </div>
-              <div className="hero-tiles">
-                <span>Fresh stock every day</span>
-                <span>Pune and Mumbai warehouses</span>
-              </div>
-            </section>
+            {!search && <Promos onPick={setCategory} />}
+            {!search && products.length > 0 && <CategoryTiles products={products} active={category} onPick={setCategory} />}
 
-            <div className="chips">
+            {search && <div className="chips">
               {categories.map((c) => (
                 <button key={c} className={`chip ${c === category ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
               ))}
-            </div>
+            </div>}
 
             {loading ? (
               <div className="grid">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="card skeleton" />)}</div>
             ) : shown.length === 0 ? (
-              <p className="muted center">No products found.</p>
+              <p className="muted center">No products found for "{search}".</p>
             ) : (
-              <div className="grid">
-                {shown.map((p) => (
-                  <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onAdd={() => add(p)} onRemove={() => remove(p)} />
-                ))}
-              </div>
+              <section className="row-section">
+                <div className="row-head">
+                  <h2 className="section-title">
+                    {search ? `Results for "${search}"` : category === 'All' ? 'All products' : category}
+                  </h2>
+                  {category !== 'All' && !search ? (
+                    <button className="see-all" onClick={() => setCategory('All')}>show all products</button>
+                  ) : (
+                    <span className="muted">{shown.length} item{shown.length > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+                <div className="grid">
+                  {shown.map((p) => (
+                    <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onAdd={() => add(p)} onRemove={() => remove(p)} />
+                  ))}
+                </div>
+              </section>
             )}
           </>
         )}
@@ -181,6 +193,8 @@ export default function App() {
         onRemove={remove}
         onPlaceOrder={placeOrder}
       />
+
+      <Toast message={toast} onDone={clearToast} />
 
       <footer className="footer">
         Case Study 9: user-service (Spring Boot), product-service (Node.js), inventory-service (Flask), MySQL 8.4, served by nginx.
