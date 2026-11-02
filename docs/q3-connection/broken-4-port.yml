@@ -1,0 +1,5 @@
+# Cause 4: wrong port. 5000 is the Flask default, the service listens on 8083.
+services:
+  product-service:
+    environment:
+      INVENTORY_URL: http://inventory-service:5000
