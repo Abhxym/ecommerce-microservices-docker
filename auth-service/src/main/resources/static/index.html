@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Service - Marketplace Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: #eef2ff;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-title p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .status-badge.up {
+      background-color: var(--success-light);
+      color: var(--success);
+    }
+
+    .status-badge.down {
+      background-color: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    .status-badge.up .status-dot {
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 32px auto 0;
+      padding: 0 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .pill-post {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .pill-get {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      background-color: #fff;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .form-help {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .alert-success {
+      background-color: var(--success-light);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .alert-error {
+      background-color: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .alert-info {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #c7d2fe;
+    }
+
+    .badge-role {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .role-customer {
+      background: #e0e7ff;
+      color: #4338ca;
+    }
+
+    .role-seller {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .role-admin {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .token-box {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      word-break: break-all;
+      max-height: 120px;
+      position: relative;
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    .result-table td {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .result-table td.label {
+      font-weight: 600;
+      color: var(--text-muted);
+      width: 110px;
+    }
+
+    .endpoints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.825rem;
+    }
+
+    .endpoints-table th, .endpoints-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .endpoints-table th {
+      background: var(--bg-page);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-title">
+        <h1>auth-service</h1>
+        <p>Spring Boot 3.3 | Port 8084 | MySQL Table: credentials</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div id="statusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="checkHealth()">Refresh Health</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <!-- Left Column: Signup & Login -->
+      <div>
+        <!-- Sign Up Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              Sign Up
+            </div>
+            <span class="pill pill-post">POST /api/auth/signup</span>
+          </div>
+
+          <div id="signupAlert" class="alert"></div>
+
+          <form id="signupForm" onsubmit="handleSignup(event)">
+            <div class="form-group">
+              <label for="signupName">Full Name *</label>
+              <input type="text" id="signupName" class="form-control" placeholder="Neha Kulkarni" required>
+            </div>
+            <div class="form-group">
+              <label for="signupEmail">Email Address *</label>
+              <input type="email" id="signupEmail" class="form-control" placeholder="neha.k@example.com" required>
+            </div>
+            <div class="form-group">
+              <label for="signupCity">City</label>
+              <input type="text" id="signupCity" class="form-control" placeholder="Nashik">
+            </div>
+            <div class="form-group">
+              <label for="signupPassword">Password *</label>
+              <input type="password" id="signupPassword" class="form-control" placeholder="••••••••" required>
+              <div class="form-help">At least 8 characters, with at least one letter and one digit.</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Sign Up (201 Created)</button>
+          </form>
+        </div>
+
+        <!-- Log In Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              Log In
+            </div>
+            <span class="pill pill-post">POST /api/auth/login</span>
+          </div>
+
+          <div id="loginAlert" class="alert"></div>
+
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="loginEmail">Email Address *</label>
+              <input type="email" id="loginEmail" class="form-control" placeholder="neha.k@example.com" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password *</label>
+              <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Log In (200 OK)</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Current Session / Me & Token Inspector -->
+      <div>
+        <!-- Profile / Me Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              Current User Profile
+            </div>
+            <span class="pill pill-get">GET /api/auth/me</span>
+          </div>
+
+          <div id="meAlert" class="alert"></div>
+
+          <div class="form-group">
+            <label for="activeToken">Bearer JWT Token</label>
+            <textarea id="activeToken" class="form-control" rows="3" placeholder="Paste or obtain token after Sign Up / Log In..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button class="btn btn-primary btn-sm" onclick="fetchMe()">Verify & Fetch Profile</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearToken()">Clear</button>
+          </div>
+
+          <div id="meDetails" style="display: none;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px;">Resolved Profile (from user-service)</h4>
+            <table class="result-table">
+              <tr>
+                <td class="label">User ID:</td>
+                <td id="meId"></td>
+              </tr>
+              <tr>
+                <td class="label">Full Name:</td>
+                <td id="meName"></td>
+              </tr>
+              <tr>
+                <td class="label">Email:</td>
+                <td id="meEmail"></td>
+              </tr>
+              <tr>
+                <td class="label">City:</td>
+                <td id="meCity"></td>
+              </tr>
+              <tr>
+                <td class="label">Role:</td>
+                <td><span id="meRole" class="badge-role"></span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Token Payload Decoder -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">JWT Claims Preview</div>
+            <span class="pill pill-get">Decoded Claims</span>
+          </div>
+          <div id="tokenClaimsEmpty" style="color: var(--text-muted); font-size: 0.85rem;">
+            No token active. Complete Sign Up or Log In to view decoded JWT claims.
+          </div>
+          <div id="tokenClaimsContent" style="display: none;">
+            <table class="result-table">
+              <tr><td class="label">Issuer (iss):</td><td id="claimIss"></td></tr>
+              <tr><td class="label">Subject (sub):</td><td id="claimSub"></td></tr>
+              <tr><td class="label">Email:</td><td id="claimEmail"></td></tr>
+              <tr><td class="label">Role:</td><td id="claimRole"></td></tr>
+              <tr><td class="label">Issued At:</td><td id="claimIat"></td></tr>
+              <tr><td class="label">Expires At:</td><td id="claimExp"></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- API Reference -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Endpoints Reference</div>
+          </div>
+          <table class="endpoints-table">
+            <thead>
+              <tr><th>Method</th><th>Path</th><th>Header / Body</th><th>Returns</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>POST</code></td><td><code>/api/auth/signup</code></td><td><code>{name, email, city, password}</code></td><td>201 {user, role, token}</td></tr>
+              <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td><code>{email, password}</code></td><td>200 {user, role, token}</td></tr>
+              <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>200 {user, role}</td></tr>
+              <tr><td><code>GET</code></td><td><code>/actuator/health</code></td><td>-</td><td>200 {"status":"UP"}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/auth';
+
+    // 1. Check Health
+    async function checkHealth() {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      try {
+        const res = await fetch('/actuator/health');
+        const data = await res.json();
+        if (res.ok && data.status === 'UP') {
+          badge.className = 'status-badge up';
+          text.textContent = 'Service & DB: UP';
+        } else {
+          badge.className = 'status-badge down';
+          text.textContent = 'Status: ' + (data.status || 'DOWN');
+        }
+      } catch (err) {
+        badge.className = 'status-badge down';
+        text.textContent = 'Service Offline';
+      }
+    }
+
+    // 2. Alert helper
+    function showAlert(elem, type, message) {
+      elem.className = 'alert ' + type;
+      elem.textContent = message;
+      elem.style.display = 'block';
+    }
+
+    // 3. Set Active Token & Decode
+    function setActiveToken(token) {
+      document.getElementById('activeToken').value = token;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64));
+        document.getElementById('tokenClaimsEmpty').style.display = 'none';
+        document.getElementById('tokenClaimsContent').style.display = 'block';
+
+        document.getElementById('claimIss').textContent = decoded.iss || '-';
+        document.getElementById('claimSub').textContent = decoded.sub || '-';
+        document.getElementById('claimEmail').textContent = decoded.email || '-';
+        document.getElementById('claimRole').textContent = decoded.role || '-';
+        document.getElementById('claimIat').textContent = decoded.iat ? new Date(decoded.iat * 1000).toLocaleString() : '-';
+        document.getElementById('claimExp').textContent = decoded.exp ? new Date(decoded.exp * 1000).toLocaleString() : '-';
+      } catch (e) {
+        document.getElementById('tokenClaimsEmpty').style.display = 'block';
+        document.getElementById('tokenClaimsContent').style.display = 'none';
+      }
+    }
+
+    function clearToken() {
+      document.getElementById('activeToken').value = '';
+      document.getElementById('meDetails').style.display = 'none';
+      document.getElementById('tokenClaimsEmpty').style.display = 'block';
+      document.getElementById('tokenClaimsContent').style.display = 'none';
+      document.getElementById('meAlert').style.display = 'none';
+    }
+
+    // 4. Handle Sign Up
+    async function handleSignup(e) {
+      e.preventDefault();
+      const alert = document.getElementById('signupAlert');
+      alert.style.display = 'none';
+
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const city = document.getElementById('signupCity').value.trim();
+      const password = document.getElementById('signupPassword').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, city, password })
+        });
+        const data = await res.json();
+
+        if (res.status === 201) {
+          showAlert(alert, 'alert-success', `Signed up successfully as #${data.user.id} (${data.user.name})! Role: ${data.role}`);
+          if (data.token) {
+            setActiveToken(data.token);
+            fetchMe();
+          }
+        } else if (res.status === 409) {
+          showAlert(alert, 'alert-error', `Conflict (409): ${data.error || 'Email already exists'}`);
+        } else if (res.status === 400) {
+          showAlert(alert, 'alert-error', `Bad Request (400): ${data.error || 'Invalid password or parameters'}`);
+        } else {
+          showAlert(alert, 'alert-error', `Error (${res.status}): ${data.error || 'Signup failed'}`);
+        }
+      } catch (err) {
+        showAlert(alert, 'alert-error', `Network error: ${err.message}`);
+      }
+    }
+
+    // 5. Handle Login
+    async function handleLogin(e) {
+      e.preventDefault();
+      const alert = document.getElementById('loginAlert');
+      alert.style.display = 'none';
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.status === 200) {
+          showAlert(alert, 'alert-success', `Logged in successfully! Welcome back ${data.user.name}.`);
+          if (data.token) {
+            setActiveToken(data.token);
+            fetchMe();
+          }
+        } else if (res.status === 401) {
+          showAlert(alert, 'alert-error', `Unauthorized (401): ${data.error || 'Invalid email or password'}`);
+        } else {
+          showAlert(alert, 'alert-error', `Error (${res.status}): ${data.error || 'Login failed'}`);
+        }
+      } catch (err) {
+        showAlert(alert, 'alert-error', `Network error: ${err.message}`);
+      }
+    }
+
+    // 6. Fetch /me
+    async function fetchMe() {
+      const alert = document.getElementById('meAlert');
+      alert.style.display = 'none';
+      const token = document.getElementById('activeToken').value.trim();
+
+      if (!token) {
+        showAlert(alert, 'alert-error', 'Please enter or generate a token first.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/me`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+        const data = await res.json();
+
+        if (res.status === 200) {
+          showAlert(alert, 'alert-success', 'Token verified! Profile loaded.');
+          document.getElementById('meDetails').style.display = 'block';
+          document.getElementById('meId').textContent = '#' + data.user.id;
+          document.getElementById('meName').textContent = data.user.name;
+          document.getElementById('meEmail').textContent = data.user.email;
+          document.getElementById('meCity').textContent = data.user.city || '-';
+
+          const roleEl = document.getElementById('meRole');
+          roleEl.textContent = data.role;
+          roleEl.className = 'badge-role role-' + (data.role || 'customer').toLowerCase();
+          setActiveToken(token);
+        } else if (res.status === 401) {
+          showAlert(alert, 'alert-error', `Unauthorized (401): ${data.error || 'Invalid or expired token'}`);
+          document.getElementById('meDetails').style.display = 'none';
+        } else {
+          showAlert(alert, 'alert-error', `Error (${res.status}): ${data.error || 'Failed to fetch /me'}`);
+          document.getElementById('meDetails').style.display = 'none';
+        }
+      } catch (err) {
+        showAlert(alert, 'alert-error', `Network error: ${err.message}`);
+      }
+    }
+
+    // Auto-init
+    checkHealth();
+  </script>
+</body>
+</html>
+

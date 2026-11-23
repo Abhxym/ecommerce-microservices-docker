@@ -9,6 +9,7 @@ Inside Docker Compose, services reach each other by **service name**, never `loc
 | user-service | `user-service/` | Java 21, Spring Boot 3 | 8081 | `GET /actuator/health` |
 | product-service | `product-service/` | Node.js 20, Express | 8082 | `GET /health` |
 | inventory-service | `inventory-service/` | Python 3.12, Flask | 8083 | `GET /health` |
+| auth-service | `auth-service/` | Java 21, Spring Boot 3 | 8084 | `GET /actuator/health` |
 | order-service | `order-service/` | Node.js 20, Express | 8085 | `GET /health` |
 | mysql | - | MySQL 8.4 | 3306 (host 3307) | `mysqladmin ping` |
 
@@ -61,6 +62,37 @@ Stock JSON:
 { "productId": 1, "quantity": 120, "warehouse": "Pune", "inStock": true }
 ```
 
+## auth-service (8084)
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/auth/signup` | `{"name","email","city","password"}` | `201` `{user, role, token, expiresIn}`, `400` invalid, `409` email exists |
+| POST | `/api/auth/login` | `{"email","password"}` | `200` `{user, role, token, expiresIn}`, `401` wrong email or password |
+| GET | `/api/auth/me` | header `Authorization: Bearer <token>` | `200` `{user, role}`, `401` missing, bad or expired token |
+| GET | `/actuator/health` | - | `200` `{"status":"UP"}` |
+
+Response for signup and login:
+```json
+{
+  "user": { "id": 6, "name": "Neha Kulkarni", "email": "neha.k@example.com", "city": "Nashik" },
+  "role": "CUSTOMER",
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresIn": 3600
+}
+```
+
+Errors use the same shape as user-service: `{"error": "Email already exists"}`.
+
+Rules:
+- Password: at least 8 characters, at least one letter and one digit. Otherwise `400`.
+- Store only the BCrypt hash (`BCryptPasswordEncoder`, strength 10). Never log or return the password or the hash.
+- Login errors: wrong email and wrong password both return the same `401 {"error":"Invalid email or password"}`. Do not say which one was wrong.
+- Signup order: check `credentials` for the email first (`409`), then call user-service `POST /api/users`
+  (pass its `409` and `400` through), then save the credentials. If saving the credentials fails after the
+  profile was created, return `500` and log it clearly.
+- New accounts always get role `CUSTOMER`. Do not accept `role` from the request body.
+- Update `last_login_at` on every successful login.
+
 ## order-service (8085)
 
 | Method | Path | Body | Response |
@@ -88,5 +120,5 @@ Rules:
 
 ## Database tables
 
-Defined in `db/init.sql`: `users` (user-service), `products` (product-service), `inventory` (inventory-service), `orders` and `order_items` (order-service).
+Defined in `db/init.sql`: `users` (user-service), `products` (product-service), `inventory` (inventory-service), `credentials` (auth-service), `orders` and `order_items` (order-service).
 Each service only reads and writes its own table.
