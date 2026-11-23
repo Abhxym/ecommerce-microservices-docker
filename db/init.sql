@@ -82,6 +82,18 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT chk_items_quantity CHECK (quantity > 0)
 );
 
+-- auth-service (same as db/migrations/002-auth-credentials.sql)
+CREATE TABLE IF NOT EXISTS credentials (
+  user_id        BIGINT PRIMARY KEY,
+  email          VARCHAR(150) NOT NULL UNIQUE,
+  password_hash  VARCHAR(100) NOT NULL,
+  role           VARCHAR(20)  NOT NULL DEFAULT 'CUSTOMER',
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login_at  TIMESTAMP NULL,
+  CONSTRAINT fk_credentials_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT chk_role CHECK (role IN ('CUSTOMER', 'SELLER', 'ADMIN'))
+);
+
 -- application user with access to this database only
 CREATE USER IF NOT EXISTS 'marketplace'@'%' IDENTIFIED BY 'change_me_app';
 GRANT ALL PRIVILEGES ON marketplace.* TO 'marketplace'@'%';
